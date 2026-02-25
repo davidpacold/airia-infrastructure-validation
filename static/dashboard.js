@@ -1,4 +1,4 @@
-/* Airia Test Pod - Dashboard JavaScript */
+/* Airia Infrastructure Validation - Dashboard JavaScript */
 'use strict';
 
 /* ── Initialization (moved from inline scripts) ───────────── */
