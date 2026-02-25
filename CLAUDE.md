@@ -45,3 +45,24 @@ Each test inherits from `BaseTest` (app/tests/base_test.py). Tests are registere
 - Secrets: never log, always from env vars / K8s secrets
 - Endpoints: auth required via Depends(require_auth)
 - Thread safety: use self._lock for shared state in TestRunner
+
+## Relationship to airia-test-pod
+This repo was created from `davidpacold/airia-test-pod` (Feb 2025) as a clean rebrand with no git history. The old repo remains deployed for existing customers. Key differences:
+- Repo/chart/image name: `airia-infrastructure-validation` (was `airia-test-pod`)
+- OCI registry: `ghcr.io/davidpacold/airia-infrastructure-validation`
+- Helm install: `helm upgrade --install airia-infrastructure-validation oci://ghcr.io/davidpacold/airia-infrastructure-validation/charts/airia-infrastructure-validation -n airia`
+- Internal code identifiers (`TestPodException`, `test_pod_exception_handler`) were intentionally kept as-is
+
+## Deploying to Kubernetes
+```bash
+# Install/upgrade
+helm upgrade --install airia-infrastructure-validation \
+  oci://ghcr.io/davidpacold/airia-infrastructure-validation/charts/airia-infrastructure-validation \
+  -n airia
+
+# Access dashboard
+kubectl port-forward -n airia svc/airia-infrastructure-validation 8080:80
+
+# Get password
+kubectl get secret airia-infrastructure-validation-auth -n airia -o jsonpath='{.data.password}' | base64 -d
+```
