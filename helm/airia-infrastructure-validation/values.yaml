@@ -178,6 +178,7 @@ config:
     username: "admin"
     password: "changeme"
     secretKey: "your-super-secret-key-change-this"  # Used for JWT tokens
+    secureCookies: false  # Set to true when using HTTPS (e.g., behind an ingress with TLS)
 
   # ╔═══════════════════════════════════════════════════════════════════════════╗
   # ║                            🗄️ DATABASE TESTS                              ║

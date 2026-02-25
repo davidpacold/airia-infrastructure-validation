@@ -66,6 +66,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "airia-infrastructure-validation.fullname" . }}-auth
                   key: secret-key
+            - name: SECURE_COOKIES
+              value: {{ .Values.config.auth.secureCookies | quote }}
             - name: KUBERNETES_NAMESPACE
               valueFrom:
                 fieldRef:
