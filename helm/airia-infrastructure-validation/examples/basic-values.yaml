@@ -1,0 +1,182 @@
+# =============================================================================
+# AIRIA TEST POD - EXAMPLE VALUES
+# =============================================================================
+# Copy this file, fill in your values, and deploy:
+#
+#   helm upgrade --install airia-infrastructure-validation \
+#     oci://ghcr.io/davidpacold/airia-infrastructure-validation/charts/airia-infrastructure-validation \
+#     -n airia --create-namespace -f my-values.yaml
+#
+# Only enable the tests you need — disabled tests show as "skipped" in the UI.
+# For the full list of options, see: helm/airia-infrastructure-validation/values.yaml
+# =============================================================================
+
+config:
+  # ── Authentication (Required) ──────────────────────────────────────────────
+  auth:
+    username: "admin"
+    password: ""                               # CHANGE THIS
+    secretKey: ""                              # Generate with: openssl rand -hex 32
+
+  # ╔═════════════════════════════════════════════════════════════════════════╗
+  # ║                            DATABASES                                   ║
+  # ╚═════════════════════════════════════════════════════════════════════════╝
+
+  # ── PostgreSQL Database ──────────────────────────────────────────────────
+  postgresql:
+    enabled: false
+    host: ""                                   # e.g., my-server.postgres.database.azure.com
+    port: "5432"
+    database: "postgres"
+    sslmode: "require"                         # disable, require, verify-ca, verify-full
+    username: ""
+    password: ""
+
+  # ── Apache Cassandra ─────────────────────────────────────────────────────
+  cassandra:
+    enabled: false
+    hosts: ""                                  # Comma-separated: host1,host2,host3
+    port: "9042"
+    username: ""
+    password: ""
+    keyspace: ""                               # Optional
+    datacenter: "datacenter1"
+    useSsl: false
+
+  # ╔═════════════════════════════════════════════════════════════════════════╗
+  # ║                          OBJECT STORAGE                                ║
+  # ╚═════════════════════════════════════════════════════════════════════════╝
+
+  # ── Azure Blob Storage ──────────────────────────────────────────────────
+  blobStorage:
+    enabled: false
+    accountName: ""
+    accountKey: ""
+    containerName: "test-container"
+
+  # ── S3 Compatible Storage (MinIO, Ceph, Wasabi, etc.) ───────────────────
+  s3Compatible:
+    enabled: false
+    endpointUrl: ""                            # e.g., https://minio.example.com
+    accessKey: ""
+    secretKey: ""
+    bucketName: "test-bucket"
+    secure: true                               # Use HTTPS
+
+  # ── Amazon S3 ───────────────────────────────────────────────────────────
+  s3:
+    enabled: false
+    region: "us-east-1"
+    accessKeyId: ""
+    secretAccessKey: ""
+    sessionToken: ""                           # Optional: for temporary credentials
+    bucketName: "test-bucket"
+    endpointUrl: ""                            # Optional: custom S3-compatible endpoint
+
+  # ╔═════════════════════════════════════════════════════════════════════════╗
+  # ║                        AI & MACHINE LEARNING                           ║
+  # ╚═════════════════════════════════════════════════════════════════════════╝
+
+  # ── Azure OpenAI ────────────────────────────────────────────────────────
+  azureOpenai:
+    enabled: false
+    endpoint: ""                               # e.g., https://my-openai.openai.azure.com/
+    apiKey: ""
+    apiVersion: "2024-02-01"
+    chatDeployment: ""                         # e.g., gpt-4o
+    embeddingDeployment: ""                    # Optional: e.g., text-embedding-ada-002
+    visionDeployment: ""                       # Optional: e.g., gpt-4o (with vision)
+
+  # ── AWS Bedrock ─────────────────────────────────────────────────────────
+  bedrock:
+    enabled: false
+    region: "us-east-1"
+    accessKeyId: ""
+    secretAccessKey: ""
+    chatModelId: ""                            # e.g., anthropic.claude-3-haiku-20240307-v1:0
+    embeddingModelId: ""                       # Optional
+    visionModelId: ""                          # Optional
+
+  # ── OpenAI Direct ───────────────────────────────────────────────────────
+  openaiDirect:
+    enabled: false
+    apiKey: ""
+    model: "gpt-4o-mini"
+
+  # ── Anthropic ───────────────────────────────────────────────────────────
+  anthropic:
+    enabled: false
+    apiKey: ""
+    model: "claude-sonnet-4-20250514"
+
+  # ── Google Gemini ───────────────────────────────────────────────────────
+  gemini:
+    enabled: false
+    apiKey: ""
+    model: "gemini-2.0-flash"
+
+  # ── Mistral AI ──────────────────────────────────────────────────────────
+  mistral:
+    enabled: false
+    apiKey: ""
+    model: "mistral-small-latest"
+
+  # ── Vision Model (OpenAI-compatible) ────────────────────────────────────
+  # For self-hosted or Azure ML vision endpoints (LLaMA Vision, etc.)
+  visionModel:
+    enabled: false
+    endpoint: ""                               # e.g., https://my-model.inference.ml.azure.com
+    apiKey: ""
+    model: ""                                  # Optional: model name
+
+  # ── Dedicated Embedding (OpenAI-compatible) ─────────────────────────────
+  # For standalone embedding endpoints (LM Studio, vLLM, Ollama, etc.)
+  dedicatedEmbedding:
+    enabled: false
+    baseUrl: ""                                # e.g., http://embedding-server:1234/v1
+    apiKey: ""                                 # Optional: some servers don't require auth
+    model: ""                                  # e.g., text-embedding-qwen3-embedding-0.6b
+    dimensions: 0                              # Optional: validate vector size (0 = skip)
+
+  # ── Azure Document Intelligence ─────────────────────────────────────────
+  documentIntelligence:
+    enabled: false
+    endpoint: ""                               # e.g., https://my-docintel.cognitiveservices.azure.com/
+    apiKey: ""
+    model: "prebuilt-document"                 # prebuilt-document, prebuilt-invoice, etc.
+    testUrl: ""                                # Optional: URL to a test document
+    timeout: 60                                # Seconds to wait for analysis
+
+  # ╔═════════════════════════════════════════════════════════════════════════╗
+  # ║                          INFRASTRUCTURE                                ║
+  # ╚═════════════════════════════════════════════════════════════════════════╝
+
+  # ── DNS Resolution ──────────────────────────────────────────────────────
+  dns:
+    enabled: false
+    hostnames: ""                              # Comma-separated: "api.example.com,db.internal"
+    timeout: 10
+
+  # ── SSL Certificate Validation ──────────────────────────────────────────
+  ssl:
+    enabled: false
+    testUrls: ""                               # Comma-separated: "https://api.example.com"
+    connectTimeout: 10
+    warningDays: 30                            # Warn if cert expires within N days
+
+  # ── Kubernetes Storage (always enabled) ─────────────────────────────────
+  kubernetes:
+    storageClass: "default"
+    testPvcSize: "1Gi"
+
+  # ── GPU Detection ───────────────────────────────────────────────────────
+  gpu:
+    enabled: false
+    required: false                            # Set true to FAIL if no GPU found
+
+# =============================================================================
+# ADVANCED (most users won't need to change these)
+# =============================================================================
+# For resources, security context, diagnostics, and other advanced
+# settings, see the full values.yaml reference:
+#   helm/airia-infrastructure-validation/values.yaml

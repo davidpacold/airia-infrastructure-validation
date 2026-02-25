@@ -1,0 +1,506 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "airia-infrastructure-validation.fullname" . }}
+  namespace: {{ include "airia-infrastructure-validation.namespace" . }}
+  labels:
+    {{- include "airia-infrastructure-validation.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "airia-infrastructure-validation.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- if .Chart.AppVersion }}
+        app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "airia-infrastructure-validation.labels" . | nindent 8 }}
+        app.kubernetes.io/version: {{ .Values.image.tag | default .Chart.AppVersion | quote }}
+        release.airia.com/version: {{ .Chart.AppVersion | quote }}
+        release.airia.com/tag: {{ .Values.image.tag | quote }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "airia-infrastructure-validation.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default (printf "v%s" .Chart.AppVersion) }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.service.targetPort | quote }}
+            - name: APP_VERSION
+              value: {{ .Chart.AppVersion | quote }}
+            - name: IMAGE_TAG
+              value: {{ .Values.image.tag | quote }}
+            - name: AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-auth
+                  key: username
+            - name: AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-auth
+                  key: password
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-auth
+                  key: secret-key
+            - name: KUBERNETES_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            {{- if .Values.config.postgresql.enabled }}
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: postgres-host
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: postgres-port
+            - name: POSTGRES_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: postgres-database
+            - name: POSTGRES_SSLMODE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: postgres-sslmode
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-postgres
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-postgres
+                  key: password
+            {{- end }}
+            {{- if .Values.config.cassandra.enabled }}
+            - name: CASSANDRA_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: cassandra-hosts
+            - name: CASSANDRA_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: cassandra-port
+            {{- if .Values.config.cassandra.keyspace }}
+            - name: CASSANDRA_KEYSPACE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: cassandra-keyspace
+            {{- end }}
+            - name: CASSANDRA_DATACENTER
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: cassandra-datacenter
+            - name: CASSANDRA_USE_SSL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: cassandra-use-ssl
+            {{- if .Values.config.cassandra.username }}
+            - name: CASSANDRA_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-cassandra
+                  key: username
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-cassandra
+                  key: password
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.blobStorage.enabled }}
+            - name: BLOB_ACCOUNT_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: blob-account-name
+            - name: BLOB_CONTAINER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: blob-container-name
+            - name: BLOB_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-blob
+                  key: account-key
+            - name: BLOB_ENDPOINT_SUFFIX
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: blob-endpoint-suffix
+            {{- end }}
+            {{- if .Values.config.azureOpenai.enabled }}
+            - name: AZURE_OPENAI_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: azure-openai-endpoint
+            - name: AZURE_OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-azure-openai
+                  key: api-key
+            - name: AZURE_OPENAI_API_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: azure-openai-api-version
+            - name: AZURE_OPENAI_CHAT_DEPLOYMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: azure-openai-chat-deployment
+            - name: AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: azure-openai-embedding-deployment
+            - name: AZURE_OPENAI_VISION_DEPLOYMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: azure-openai-vision-deployment
+            {{- end }}
+            {{- if .Values.config.bedrock.enabled }}
+            - name: BEDROCK_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: bedrock-region
+            - name: BEDROCK_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-bedrock
+                  key: access-key-id
+            - name: BEDROCK_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-bedrock
+                  key: secret-access-key
+            - name: BEDROCK_CHAT_MODEL_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: bedrock-chat-model-id
+            - name: BEDROCK_EMBEDDING_MODEL_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: bedrock-embedding-model-id
+            - name: BEDROCK_VISION_MODEL_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: bedrock-vision-model-id
+            {{- end }}
+            {{- if .Values.config.openaiDirect.enabled }}
+            - name: OPENAI_DIRECT_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-openai-direct
+                  key: api-key
+            - name: OPENAI_DIRECT_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: openai-direct-model
+            {{- end }}
+            {{- if .Values.config.anthropic.enabled }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-anthropic
+                  key: api-key
+            - name: ANTHROPIC_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: anthropic-model
+            {{- end }}
+            {{- if .Values.config.gemini.enabled }}
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-gemini
+                  key: api-key
+            - name: GEMINI_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: gemini-model
+            {{- end }}
+            {{- if .Values.config.mistral.enabled }}
+            - name: MISTRAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-mistral
+                  key: api-key
+            - name: MISTRAL_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: mistral-model
+            {{- end }}
+            {{- if .Values.config.visionModel.enabled }}
+            - name: VISION_MODEL_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: vision-model-endpoint
+            - name: VISION_MODEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-vision-model
+                  key: api-key
+            - name: VISION_MODEL_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: vision-model-name
+            {{- end }}
+            {{- if .Values.config.dedicatedEmbedding.enabled }}
+            - name: DEDICATED_EMBEDDING_BASE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: dedicated-embedding-base-url
+            - name: DEDICATED_EMBEDDING_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-dedicated-embedding
+                  key: api-key
+            - name: DEDICATED_EMBEDDING_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: dedicated-embedding-model
+            - name: DEDICATED_EMBEDDING_DIMENSIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: dedicated-embedding-dimensions
+            {{- end }}
+            {{- if .Values.config.documentIntelligence.enabled }}
+            - name: AZURE_DOC_INTEL_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: azure-doc-intel-endpoint
+            - name: AZURE_DOC_INTEL_MODEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: azure-doc-intel-model
+            {{- if .Values.config.documentIntelligence.testUrl }}
+            - name: AZURE_DOC_INTEL_TEST_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: azure-doc-intel-test-url
+            {{- end }}
+            - name: AZURE_DOC_INTEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-doc-intel
+                  key: api-key
+            - name: DOC_INTEL_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: doc-intel-timeout
+            {{- end }}
+            {{- if .Values.config.ssl.enabled }}
+            - name: SSL_TEST_URLS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: ssl-test-urls
+            - name: SSL_CONNECT_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: ssl-connect-timeout
+            - name: SSL_WARNING_DAYS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: ssl-warning-days
+            {{- end }}
+            {{- if .Values.config.s3Compatible.enabled }}
+            - name: S3C_ENDPOINT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: s3c-endpoint-url
+            - name: S3C_BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: s3c-bucket-name
+            - name: S3C_SECURE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: s3c-secure
+            - name: S3C_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-s3c
+                  key: access-key
+            - name: S3C_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-s3c
+                  key: secret-key
+            {{- end }}
+            {{- if .Values.config.s3.enabled }}
+            - name: AWS_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: aws-region
+            - name: S3_BUCKET_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: s3-bucket-name
+            {{- if .Values.config.s3.endpointUrl }}
+            - name: S3_ENDPOINT_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: s3-endpoint-url
+            {{- end }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-s3
+                  key: access-key-id
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-s3
+                  key: secret-access-key
+            {{- if .Values.config.s3.sessionToken }}
+            - name: AWS_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-s3
+                  key: session-token
+            {{- end }}
+            {{- end }}
+            {{- if .Values.config.dns.enabled }}
+            - name: DNS_TEST_HOSTNAMES
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: dns-test-hostnames
+            - name: DNS_TEST_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: dns-test-timeout
+            {{- end }}
+            {{- if .Values.config.gpu.enabled }}
+            - name: GPU_REQUIRED
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: gpu-required
+            {{- end }}
+            - name: STORAGE_CLASS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: storage-class
+            - name: TEST_PVC_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+                  key: test-pvc-size
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 2
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: http
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 12
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

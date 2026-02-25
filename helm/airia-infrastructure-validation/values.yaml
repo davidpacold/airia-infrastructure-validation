@@ -1,0 +1,474 @@
+# ===============================================================================
+# AIRIA TEST POD - DEFAULT CONFIGURATION
+# ===============================================================================
+# This Helm chart deploys an infrastructure validation tool that tests various
+# services and configurations in your Kubernetes environment.
+#
+# Each test appears as a card in the web UI dashboard.
+# Tests can be run individually or all at once to validate infrastructure readiness.
+# ===============================================================================
+
+# Default values for airia-infrastructure-validation
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# ===============================================================================
+# DEPLOYMENT CONFIGURATION
+# ===============================================================================
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/davidpacold/airia-infrastructure-validation
+  pullPolicy: Always
+  # tag defaults to .Chart.AppVersion if not specified
+  # The chart automatically prepends 'v' prefix (e.g., v1.0.170)
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ===============================================================================
+# KUBERNETES RESOURCES
+# ===============================================================================
+# Configure Kubernetes-specific settings for the test pod deployment.
+# These settings control security, networking, and resource management.
+# ===============================================================================
+
+# ---------------------------------------------------------------------------
+# SERVICE ACCOUNT
+# ---------------------------------------------------------------------------
+# Service accounts provide an identity for processes running in pods.
+# The test pod needs a service account to:
+# - Create/delete PVCs for storage testing
+# - Access Kubernetes API for cluster information
+# - Run tests that validate Kubernetes functionality
+serviceAccount:
+  create: true  # Automatically create a service account for the pod
+  annotations: {}  # Add cloud provider annotations if needed (e.g., AWS IAM roles)
+  # Example for AWS EKS with IAM roles for service accounts (IRSA):
+  # annotations:
+  #   eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/airia-infrastructure-validation
+  name: ""  # Leave empty to auto-generate name based on release name
+
+# Advanced Kubernetes settings (optional)
+podAnnotations: {}  # Add custom annotations for monitoring/service mesh
+
+# Pod-level security settings
+# These settings enhance security by enforcing non-root execution and seccomp
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container-level security settings
+# Drops all Linux capabilities and prevents privilege escalation
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# ---------------------------------------------------------------------------
+# SERVICE CONFIGURATION
+# ---------------------------------------------------------------------------
+# Kubernetes Service exposes the test pod within the cluster.
+# Access via: kubectl port-forward -n airia svc/airia-infrastructure-validation 8080:80
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# ===============================================================================
+# RESOURCE LIMITS
+# ===============================================================================
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+    # Uncomment to allocate a GPU to the pod (shows GPU test in UI)
+    # Requires GPU-enabled Kubernetes node with NVIDIA drivers
+    # nvidia.com/gpu: 1
+  requests:
+    cpu: 100m
+    memory: 256Mi
+    # Uncomment to request GPU allocation
+    # nvidia.com/gpu: 1
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# ===============================================================================
+# APPLICATION CONFIGURATION
+# ===============================================================================
+# Each enabled test appears as a card in the web UI dashboard.
+# Configure credentials and endpoints for the services you want to validate.
+#
+# 🚀 QUICK START: Common Configuration Scenarios
+#
+# 1️⃣  Azure Infrastructure Testing:
+#     Enable: postgresql, blobStorage
+#
+# 2️⃣  Azure + AI/ML Stack:
+#     Enable: postgresql, blobStorage, openai, documentIntelligence
+#
+# 3️⃣  Self-hosted AI Stack:
+#     Enable: postgresql, s3, openaiDirect, or dedicatedEmbedding
+#
+# 4️⃣  Minimal Validation:
+#     kubernetes test is always enabled automatically
+#
+# ===============================================================================
+# TABLE OF CONTENTS
+# ===============================================================================
+#
+# 📋 REQUIRED/CORE
+#   - Authentication .......................... Line 192
+#   - Kubernetes Storage (always enabled) ..... Line 424
+#
+# 🗄️ DATABASES
+#   - PostgreSQL .............................. Line 207
+#   - Apache Cassandra ........................ Line 223
+#
+# 💾 OBJECT STORAGE
+#   - Azure Blob Storage ...................... Line 242
+#   - S3-Compatible Storage .................. Line 254
+#   - Amazon S3 ............................... Line 269
+#
+# 🤖 AI & MACHINE LEARNING
+#   - Azure OpenAI & OpenAI-Compatible ........ Line 328
+#   - Dedicated Embedding Models .............. Line 422
+#   - Azure Document Intelligence ............. Line 443
+#
+# 🔧 INFRASTRUCTURE
+#   - DNS Resolution .......................... Line 459
+#   - SSL Certificate Validation .............. Line 471
+#   - Kubernetes Storage (always enabled) ..... Line 485
+#   - GPU Detection ........................... Line 497
+#
+# ===============================================================================
+
+config:
+  # ╔═══════════════════════════════════════════════════════════════════════════╗
+  # ║                        📋 REQUIRED/CORE CONFIGURATION                     ║
+  # ╚═══════════════════════════════════════════════════════════════════════════╝
+
+  # ---------------------------------------------------------------------------
+  # AUTHENTICATION (Required)
+  # ---------------------------------------------------------------------------
+  # Credentials for accessing the web UI dashboard
+  # Default: username=admin, password=changeme
+  # IMPORTANT: Change these in production!
+  auth:
+    username: "admin"
+    password: "changeme"
+    secretKey: "your-super-secret-key-change-this"  # Used for JWT tokens
+
+  # ╔═══════════════════════════════════════════════════════════════════════════╗
+  # ║                            🗄️ DATABASE TESTS                              ║
+  # ╚═══════════════════════════════════════════════════════════════════════════╝
+
+  # ---------------------------------------------------------------------------
+  # POSTGRESQL DATABASE TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "PostgreSQL Database"
+  # Tests: Connection, query execution, SSL/TLS, connection pooling
+  # Set enabled: true to show this test in the UI
+  postgresql:
+    enabled: false
+    host: "your-postgres-server.postgres.database.azure.com"
+    port: "5432"
+    database: "postgres"
+    sslmode: "require"  # Options: disable, require, verify-ca, verify-full
+    username: ""
+    password: ""
+
+  # ---------------------------------------------------------------------------
+  # APACHE CASSANDRA TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Apache Cassandra"
+  # Tests: Connection, keyspace access, read/write operations, multi-node
+  # Set enabled: true to show this test in the UI
+  cassandra:
+    enabled: false
+    hosts: ""  # Comma-separated list: host1,host2,host3
+    port: "9042"
+    username: ""
+    password: ""
+    keyspace: ""  # Optional: specific keyspace to test
+    datacenter: "datacenter1"  # Optional: leave empty for single-DC
+    useSsl: false
+
+  # ╔═══════════════════════════════════════════════════════════════════════════╗
+  # ║                          💾 OBJECT STORAGE TESTS                          ║
+  # ╚═══════════════════════════════════════════════════════════════════════════╝
+
+  # ---------------------------------------------------------------------------
+  # AZURE BLOB STORAGE TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Azure Blob Storage"
+  # Tests: Connection, container access, file upload/download, permissions
+  # Set enabled: true to show this test in the UI
+  blobStorage:
+    enabled: false
+    accountName: ""
+    accountKey: ""
+    containerName: "test-container"
+
+  # ---------------------------------------------------------------------------
+  # S3-COMPATIBLE STORAGE TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "S3 Compatible Storage"
+  # Tests: Connection, bucket access, file upload/download/delete, encryption
+  # Works with any S3-compatible storage (MinIO, Ceph, Wasabi, etc.)
+  # Set enabled: true to show this test in the UI
+  s3Compatible:
+    enabled: false
+    endpointUrl: "https://s3.example.com"
+    accessKey: ""
+    secretKey: ""
+    bucketName: "test-bucket"
+    secure: true  # Use HTTPS
+
+  # ---------------------------------------------------------------------------
+  # AMAZON S3 STORAGE TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Amazon S3 Storage"
+  # Tests: Connection, bucket access, file upload/download/delete, encryption, versioning
+  # Supports IAM roles, access keys, and temporary credentials
+  # Set enabled: true to show this test in the UI
+  s3:
+    enabled: false
+    region: "us-east-1"
+    accessKeyId: ""
+    secretAccessKey: ""
+    sessionToken: ""  # Optional for temporary credentials (IAM roles)
+    bucketName: "test-bucket"
+    endpointUrl: ""  # Optional: for custom S3-compatible endpoints
+
+  # ╔═══════════════════════════════════════════════════════════════════════════╗
+  # ║                      🤖 AI & MACHINE LEARNING TESTS                       ║
+  # ╚═══════════════════════════════════════════════════════════════════════════╝
+
+  # ---------------------------------------------------------------------------
+  # AZURE OPENAI SERVICE TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Azure OpenAI"
+  # Tests: Chat completion, embedding generation, vision (full provider)
+  # Set enabled: true to show this test in the UI
+  azureOpenai:
+    enabled: false
+    endpoint: ""
+    apiKey: ""
+    apiVersion: "2024-02-01"
+    chatDeployment: ""
+    embeddingDeployment: ""
+    visionDeployment: ""  # Optional
+
+  # ---------------------------------------------------------------------------
+  # AWS BEDROCK TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "AWS Bedrock"
+  # Tests: Chat completion, embedding generation, vision (full provider)
+  # Set enabled: true to show this test in the UI
+  bedrock:
+    enabled: false
+    region: "us-east-1"
+    accessKeyId: ""
+    secretAccessKey: ""
+    chatModelId: ""
+    embeddingModelId: ""  # Optional
+    visionModelId: ""  # Optional
+
+  # ---------------------------------------------------------------------------
+  # OPENAI DIRECT API TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "OpenAI Direct"
+  # Tests: Chat completion (chat-only provider)
+  # Set enabled: true to show this test in the UI
+  openaiDirect:
+    enabled: false
+    apiKey: ""
+    model: "gpt-4o-mini"
+
+  # ---------------------------------------------------------------------------
+  # ANTHROPIC API TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Anthropic"
+  # Tests: Chat completion (chat-only provider)
+  # Set enabled: true to show this test in the UI
+  anthropic:
+    enabled: false
+    apiKey: ""
+    model: "claude-sonnet-4-20250514"
+
+  # ---------------------------------------------------------------------------
+  # GOOGLE GEMINI API TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Google Gemini"
+  # Tests: Chat completion (chat-only provider)
+  # Set enabled: true to show this test in the UI
+  gemini:
+    enabled: false
+    apiKey: ""
+    model: "gemini-2.0-flash"
+
+  # ---------------------------------------------------------------------------
+  # MISTRAL AI API TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Mistral AI"
+  # Tests: Chat completion (chat-only provider)
+  # Set enabled: true to show this test in the UI
+  mistral:
+    enabled: false
+    apiKey: ""
+    model: "mistral-small-latest"
+
+  # ---------------------------------------------------------------------------
+  # VISION MODEL TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Vision Model"
+  # Tests: Chat completion, vision/image analysis (full provider)
+  # Works with any OpenAI-compatible vision endpoint:
+  #   - Azure ML Studio serverless endpoints (e.g., LLaMA 3.2 Vision)
+  #   - Self-hosted models (vLLM, Ollama, TGI)
+  #   - Any endpoint supporting /v1/chat/completions with image_url
+  # Set enabled: true to show this test in the UI
+  visionModel:
+    enabled: false
+    endpoint: ""  # Full URL, e.g., https://my-model.region.inference.ml.azure.com
+    apiKey: ""
+    model: ""  # Optional: model name if endpoint serves multiple models
+
+  # ---------------------------------------------------------------------------
+  # DEDICATED EMBEDDING TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Dedicated Embedding"
+  # Tests: Connection, embedding generation, optional dimension validation
+  # Works with any OpenAI-compatible embedding endpoint:
+  #   - LM Studio, vLLM, Ollama, TGI
+  #   - Self-hosted embedding models
+  #   - Any endpoint supporting POST /v1/embeddings
+  # Set enabled: true to show this test in the UI
+  dedicatedEmbedding:
+    enabled: false
+    baseUrl: ""        # e.g., http://host.docker.internal:1234/v1
+    apiKey: ""
+    model: ""          # e.g., text-embedding-qwen3-embedding-0.6b
+    dimensions: 0      # Optional: validate returned vector matches expected size
+
+  # ---------------------------------------------------------------------------
+  # AZURE DOCUMENT INTELLIGENCE TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Document Intelligence"
+  # Tests: Document analysis, OCR, form recognition, table extraction
+  # Supports PDF, image, and document file uploads (up to 25MB) through UI
+  #
+  # Use Case: Validate Azure Document Intelligence API for processing documents
+  # - OCR text extraction from images and PDFs
+  # - Table and form recognition
+  # - Layout analysis and structure detection
+  # - Page-by-page content analysis
+  #
+  # Set enabled: true to show this test in the UI
+  documentIntelligence:
+    enabled: false
+    endpoint: "https://your-doc-intel.cognitiveservices.azure.com/"
+    apiKey: ""
+    model: "prebuilt-document"  # Options: prebuilt-document, prebuilt-invoice, prebuilt-receipt, etc.
+
+  # ╔═══════════════════════════════════════════════════════════════════════════╗
+  # ║                         🔧 INFRASTRUCTURE TESTS                           ║
+  # ╚═══════════════════════════════════════════════════════════════════════════╝
+
+  # ---------------------------------------------------------------------------
+  # DNS RESOLUTION TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "DNS Resolution"
+  # Tests: DNS resolution for specified hostnames
+  # Set enabled: true to show this test in the UI
+  dns:
+    enabled: false
+    hostnames: ""  # Comma-separated: "api.example.com,db.internal"
+    timeout: 10
+
+  # ---------------------------------------------------------------------------
+  # SSL CERTIFICATE TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "SSL Certificate Validation"
+  # Tests: Certificate validity, expiration dates, chain validation, TLS versions
+  # Monitors multiple URLs and warns when certificates expire soon
+  # Set enabled: true to show this test in the UI
+  ssl:
+    enabled: false
+    testUrls: "https://api.example.com,https://app.example.com"  # Comma-separated
+    connectTimeout: 10  # Seconds
+    warningDays: 30  # Warn if certificate expires within this many days
+
+  # ---------------------------------------------------------------------------
+  # KUBERNETES STORAGE TEST (Always Enabled)
+  # ---------------------------------------------------------------------------
+  # UI Card: "Kubernetes PVC Storage"
+  # Tests: PVC creation, mounting, read/write operations, cleanup
+  #
+  # NOTE: This test is ALWAYS enabled and cannot be disabled.
+  # It validates that Kubernetes can provision persistent storage in your cluster.
+  kubernetes:
+    storageClass: "default"  # StorageClass to use for test PVC
+    testPvcSize: "1Gi"  # Size of test PVC
+
+  # ---------------------------------------------------------------------------
+  # GPU DETECTION TEST (Optional)
+  # ---------------------------------------------------------------------------
+  # UI Card: "GPU Detection"
+  # Tests: NVIDIA GPU presence, driver version, CUDA availability, memory
+  # Shows GPU information if available, or reports no GPU found
+  # Set enabled: true to show this test in the UI
+  # Note: Requires GPU node and nvidia.com/gpu resource allocation (see resources section)
+  gpu:
+    enabled: true
+    required: false  # Set to true to FAIL the test if no GPU is found
+    # ⚙️  RELATED SETTINGS:
+    #     To allocate GPU to the pod, see: resources.limits.nvidia.com/gpu (line 118)
+
+# ===============================================================================
+# POD DIAGNOSTICS
+# ===============================================================================
+# Collects pod details (status, logs, env vars, events) from any namespace.
+# Requires elevated RBAC (ClusterRole) for cross-namespace access.
+# Opt-in: must be explicitly enabled.
+diagnostics:
+  enabled: true  # Enables pod diagnostics collection (adds read-only ClusterRole for cross-namespace access)
+
+# ===============================================================================
+# NAMESPACE CONFIGURATION
+# ===============================================================================
+namespace:
+  create: false  # Set to true to create a new namespace
+  name: "airia"  # Namespace name if create is true
+
+# ===============================================================================
+# VERSION CHECKING (Optional)
+# ===============================================================================
+# Helps ensure you're deploying the latest version of the chart
+versionCheck:
+  enabled: true  # Check for newer versions during helm upgrade
+  useOCI: true  # Use OCI registry for version checks
+  ociRepo: "oci://ghcr.io/davidpacold/airia-infrastructure-validation/charts"
+  strict: false  # false = warn about newer versions, true = block old versions
+

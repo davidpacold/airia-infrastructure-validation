@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - {{ title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}?v={{ version }}">
+    <script src="{{ url_for('static', path='/vendor/axios.min.js') }}"></script>
+<script src="{{ url_for('static', path='/dashboard.js') }}?v={{ version }}" data-app-version="{{ version }}"></script>
+</head>
+<body>
+    <!-- Notification System -->
+    <div class="notification-container" id="notificationContainer" role="alert" aria-live="polite"></div>
+
+    <div class="container">
+        <header class="dashboard-header">
+            <div>
+                <h1>{{ title }}</h1>
+                <div class="connection-status">
+                    <span class="status-indicator" id="connectionIndicator"></span>
+                    <span id="connectionStatus">Manual refresh mode</span>
+                    <span class="real-time-badge">READY</span>
+                </div>
+            </div>
+            <div class="user-info">
+                <span>Welcome, <strong>{{ username }}</strong></span>
+                <a href="/logout" class="logout-button">Logout</a>
+            </div>
+        </header>
+
+        <main>
+            <div class="welcome-section">
+                <h2>Infrastructure Readiness Dashboard</h2>
+                <p>Validate your infrastructure before deploying the main application. Run tests to check connectivity to all required services.</p>
+                <button class="run-tests-button" id="runAllTestsBtn" aria-label="Run all infrastructure tests">Run All Tests</button>
+            </div>
+
+            <!-- Pod Diagnostics -->
+            <div class="diagnostics-section">
+                <div class="diagnostics-card">
+                    <div class="diagnostics-header">
+                        <div>
+                            <h3>Pod Diagnostics</h3>
+                            <p>Collect pod details (status, logs, env vars, events) from any namespace and download as an archive.</p>
+                        </div>
+                    </div>
+                    <div class="diagnostics-controls">
+                        <div class="diagnostics-inputs">
+                            <div class="diagnostics-field">
+                                <label for="diag-namespace">Namespace</label>
+                                <input type="text" id="diag-namespace" value="airia" placeholder="e.g. airia" class="dns-input">
+                            </div>
+                            <div class="diagnostics-field">
+                                <label for="diag-since">Log History</label>
+                                <select id="diag-since" class="diag-select">
+                                    <option value="">All logs</option>
+                                    <option value="1h" selected>Last 1 hour</option>
+                                    <option value="6h">Last 6 hours</option>
+                                    <option value="24h">Last 24 hours</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="diagnostics-actions">
+                            <button class="run-tests-button" id="diagCollectBtn">Collect Diagnostics</button>
+                            <button class="test-button" id="diagDownloadBtn" style="display:none;">Download Archive</button>
+                        </div>
+                    </div>
+                    <div class="diagnostics-status" id="diagStatus" style="display:none;">
+                        <span class="diag-status-icon" id="diagStatusIcon"></span>
+                        <span id="diagStatusText"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Storage Tests -->
+            <div class="test-section">
+                <h2 class="section-title">Storage Tests</h2>
+                <div class="test-grid">
+                    <div class="test-card" id="blobstorage-card">
+                        <h3>Azure Blob Storage</h3>
+                        <p>Tests authentication and file operations</p>
+                        <span class="test-status ready" id="blobstorage-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="blobstorage" id="blobstorage-btn">Run Test</button>
+                        <div class="test-details" id="blobstorage-details"></div>
+                    </div>
+
+                    <div class="test-card" id="s3-card">
+                        <h3>Amazon S3 Storage</h3>
+                        <p>Tests S3 connectivity and operations</p>
+                        <span class="test-status ready" id="s3-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="s3" id="s3-btn">Run Test</button>
+                        <div class="test-details" id="s3-details"></div>
+                    </div>
+
+                    <div class="test-card" id="s3compatible-card">
+                        <h3>S3 Compatible Storage</h3>
+                        <p>Tests S3-compatible storage connectivity</p>
+                        <span class="test-status ready" id="s3compatible-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="s3compatible" id="s3compatible-btn">Run Test</button>
+                        <div class="test-details" id="s3compatible-details"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Tests -->
+            <div class="test-section">
+                <h2 class="section-title">Database Tests</h2>
+                <div class="test-grid">
+                    <div class="test-card" id="postgresqlv2-card">
+                        <h3>PostgreSQL Database</h3>
+                        <p>Tests connection, databases, and extensions</p>
+                        <span class="test-status ready" id="postgresqlv2-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="postgresqlv2" id="postgresqlv2-btn">Run Test</button>
+                        <div class="test-details" id="postgresqlv2-details"></div>
+                    </div>
+
+                    <div class="test-card" id="cassandra-card">
+                        <h3>Apache Cassandra</h3>
+                        <p>Tests connectivity, keyspaces, and cluster health</p>
+                        <span class="test-status ready" id="cassandra-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="cassandra" id="cassandra-btn">Run Test</button>
+                        <div class="test-details" id="cassandra-details"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI & ML Tests -->
+            <div class="test-section">
+                <h2 class="section-title">AI &amp; Machine Learning Tests</h2>
+                <div class="test-grid">
+                    <div class="test-card" id="azure_openai-card">
+                        <h3>Azure OpenAI</h3>
+                        <p>Tests Azure OpenAI endpoint connectivity</p>
+                        <span class="test-status ready" id="azure_openai-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="azure_openai" id="azure_openai-btn">Run Test</button>
+                        <div class="test-details" id="azure_openai-details"></div>
+                    </div>
+
+                    <div class="test-card" id="openai_direct-card">
+                        <h3>OpenAI Direct</h3>
+                        <p>Tests OpenAI API connectivity</p>
+                        <span class="test-status ready" id="openai_direct-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="openai_direct" id="openai_direct-btn">Run Test</button>
+                        <div class="test-details" id="openai_direct-details"></div>
+                    </div>
+
+                    <div class="test-card" id="anthropic-card">
+                        <h3>Anthropic Claude</h3>
+                        <p>Tests Anthropic API connectivity</p>
+                        <span class="test-status ready" id="anthropic-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="anthropic" id="anthropic-btn">Run Test</button>
+                        <div class="test-details" id="anthropic-details"></div>
+                    </div>
+
+                    <div class="test-card" id="bedrock-card">
+                        <h3>AWS Bedrock</h3>
+                        <p>Tests AWS Bedrock AI service</p>
+                        <span class="test-status ready" id="bedrock-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="bedrock" id="bedrock-btn">Run Test</button>
+                        <div class="test-details" id="bedrock-details"></div>
+                    </div>
+
+                    <div class="test-card" id="gemini-card">
+                        <h3>Google Gemini</h3>
+                        <p>Tests Google Gemini API connectivity</p>
+                        <span class="test-status ready" id="gemini-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="gemini" id="gemini-btn">Run Test</button>
+                        <div class="test-details" id="gemini-details"></div>
+                    </div>
+
+                    <div class="test-card" id="mistral-card">
+                        <h3>Mistral AI</h3>
+                        <p>Tests Mistral API connectivity</p>
+                        <span class="test-status ready" id="mistral-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="mistral" id="mistral-btn">Run Test</button>
+                        <div class="test-details" id="mistral-details"></div>
+                    </div>
+
+                    <div class="test-card" id="vision_model-card">
+                        <h3>Vision Model</h3>
+                        <p>Tests vision-capable model endpoint</p>
+                        <span class="test-status ready" id="vision_model-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="vision_model" id="vision_model-btn">Run Test</button>
+                        <div class="test-details" id="vision_model-details"></div>
+                    </div>
+
+                    <div class="test-card" id="dedicated_embedding-card">
+                        <h3>Dedicated Embedding</h3>
+                        <p>Tests embedding model endpoint</p>
+                        <span class="test-status ready" id="dedicated_embedding-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="dedicated_embedding" id="dedicated_embedding-btn">Run Test</button>
+                        <div class="test-details" id="dedicated_embedding-details"></div>
+                    </div>
+
+                    <div class="test-card" id="docintel-card">
+                        <h3>Document Intelligence</h3>
+                        <p>Tests document processing API</p>
+                        <span class="test-status ready" id="docintel-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="docintel" id="docintel-btn">Run Test</button>
+                        <div class="test-details" id="docintel-details"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Infrastructure Tests -->
+            <div class="test-section">
+                <h2 class="section-title">Infrastructure Tests</h2>
+                <div class="test-grid">
+                    <div class="test-card" id="pvc-card">
+                        <h3>Kubernetes PVC</h3>
+                        <p>Tests storage class and permissions</p>
+                        <span class="test-status ready" id="pvc-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="pvc" id="pvc-btn">Run Test</button>
+                        <div class="test-details" id="pvc-details"></div>
+                    </div>
+
+                    <div class="test-card" id="gpu-card">
+                        <h3>GPU Detection</h3>
+                        <p>Validates GPU availability, driver, and CUDA</p>
+                        <span class="test-status ready" id="gpu-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="gpu" id="gpu-btn">Run Test</button>
+                        <div class="test-details" id="gpu-details"></div>
+                    </div>
+
+                    <div class="test-card" id="dns-card">
+                        <h3>DNS Resolution</h3>
+                        <p>Tests DNS resolution for configured hosts</p>
+                        <span class="test-status ready" id="dns-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="dns" id="dns-btn">Run Test</button>
+                        <div class="test-details" id="dns-details"></div>
+                        <div class="dns-adhoc">
+                            <label for="dns-hostname" class="sr-only">Hostname to resolve</label>
+                            <input type="text" id="dns-hostname" placeholder="Resolve a hostname..." class="dns-input" aria-label="Hostname to resolve">
+                            <button class="test-button test-button-sm" id="dns-resolve-btn">Resolve</button>
+                            <div id="dns-resolve-result" class="dns-result"></div>
+                        </div>
+                    </div>
+
+                    <div class="test-card" id="ssl-card">
+                        <h3>SSL Certificates</h3>
+                        <p>Validates certificate chains and expiry</p>
+                        <span class="test-status ready" id="ssl-status" aria-live="polite">Ready to Test</span>
+                        <button class="test-button" data-test-id="ssl" id="ssl-btn">Run Test</button>
+                        <div class="test-details" id="ssl-details"></div>
+                        <div class="dns-adhoc">
+                            <label for="ssl-hostname" class="sr-only">Hostname to check SSL</label>
+                            <input type="text" id="ssl-hostname" placeholder="Check SSL for a hostname…" class="dns-input" aria-label="Hostname to check SSL">
+                            <input type="number" id="ssl-port" placeholder="443" class="dns-input" style="max-width:80px" min="1" max="65535" aria-label="Port">
+                            <button class="test-button test-button-sm" id="ssl-check-btn">Check</button>
+                            <div id="ssl-check-result" class="dns-result"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Airia Infrastructure Test Pod <span id="version-display">Loading...</span></p>
+        </footer>
+    </div>
+</body>
+</html>

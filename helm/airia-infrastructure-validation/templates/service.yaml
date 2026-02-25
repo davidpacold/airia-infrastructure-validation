@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "airia-infrastructure-validation.fullname" . }}
+  namespace: {{ include "airia-infrastructure-validation.namespace" . }}
+  labels:
+    {{- include "airia-infrastructure-validation.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "airia-infrastructure-validation.selectorLabels" . | nindent 4 }}

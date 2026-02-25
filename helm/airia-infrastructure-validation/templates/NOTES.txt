@@ -1,0 +1,108 @@
+1. Access the dashboard:
+  kubectl port-forward -n {{ include "airia-infrastructure-validation.namespace" . }} svc/{{ include "airia-infrastructure-validation.fullname" . }} 8080:80
+  open http://localhost:8080
+
+2. Login credentials:
+   Username: {{ .Values.config.auth.username }}
+   Password: kubectl get secret {{ include "airia-infrastructure-validation.fullname" . }}-auth -n {{ include "airia-infrastructure-validation.namespace" . }} -o jsonpath='{.data.password}' | base64 -d
+
+3. Configured tests (18 total):
+
+   -- Databases --
+{{- if .Values.config.postgresql.enabled }}
+   ✓ PostgreSQL Database Test
+{{- else }}
+   ✗ PostgreSQL Database Test (disabled)
+{{- end }}
+{{- if .Values.config.cassandra.enabled }}
+   ✓ Apache Cassandra Test
+{{- else }}
+   ✗ Apache Cassandra Test (disabled)
+{{- end }}
+
+   -- Object Storage --
+{{- if .Values.config.blobStorage.enabled }}
+   ✓ Azure Blob Storage Test
+{{- else }}
+   ✗ Azure Blob Storage Test (disabled)
+{{- end }}
+{{- if .Values.config.s3Compatible.enabled }}
+   ✓ S3 Compatible Storage Test
+{{- else }}
+   ✗ S3 Compatible Storage Test (disabled)
+{{- end }}
+{{- if .Values.config.s3.enabled }}
+   ✓ Amazon S3 Storage Test
+{{- else }}
+   ✗ Amazon S3 Storage Test (disabled)
+{{- end }}
+
+   -- AI & Machine Learning --
+{{- if .Values.config.azureOpenai.enabled }}
+   ✓ Azure OpenAI Test
+{{- else }}
+   ✗ Azure OpenAI Test (disabled)
+{{- end }}
+{{- if .Values.config.bedrock.enabled }}
+   ✓ AWS Bedrock Test
+{{- else }}
+   ✗ AWS Bedrock Test (disabled)
+{{- end }}
+{{- if .Values.config.openaiDirect.enabled }}
+   ✓ OpenAI Direct Test
+{{- else }}
+   ✗ OpenAI Direct Test (disabled)
+{{- end }}
+{{- if .Values.config.anthropic.enabled }}
+   ✓ Anthropic Test
+{{- else }}
+   ✗ Anthropic Test (disabled)
+{{- end }}
+{{- if .Values.config.gemini.enabled }}
+   ✓ Google Gemini Test
+{{- else }}
+   ✗ Google Gemini Test (disabled)
+{{- end }}
+{{- if .Values.config.mistral.enabled }}
+   ✓ Mistral AI Test
+{{- else }}
+   ✗ Mistral AI Test (disabled)
+{{- end }}
+{{- if .Values.config.visionModel.enabled }}
+   ✓ Vision Model Test
+{{- else }}
+   ✗ Vision Model Test (disabled)
+{{- end }}
+{{- if .Values.config.dedicatedEmbedding.enabled }}
+   ✓ Dedicated Embedding Test
+{{- else }}
+   ✗ Dedicated Embedding Test (disabled)
+{{- end }}
+{{- if .Values.config.documentIntelligence.enabled }}
+   ✓ Document Intelligence Test
+{{- else }}
+   ✗ Document Intelligence Test (disabled)
+{{- end }}
+
+   -- Infrastructure --
+{{- if .Values.config.dns.enabled }}
+   ✓ DNS Resolution Test
+{{- else }}
+   ✗ DNS Resolution Test (disabled)
+{{- end }}
+{{- if .Values.config.ssl.enabled }}
+   ✓ SSL Certificate Test
+{{- else }}
+   ✗ SSL Certificate Test (disabled)
+{{- end }}
+   ✓ Kubernetes PVC Test (always enabled)
+{{- if .Values.config.gpu.enabled }}
+   ✓ GPU Detection Test
+{{- else }}
+   ✗ GPU Detection Test (disabled)
+{{- end }}
+
+4. To customize the configuration, create a values.yaml file with your settings and upgrade:
+   helm upgrade {{ .Release.Name }} oci://ghcr.io/davidpacold/airia-infrastructure-validation/charts/airia-infrastructure-validation -f values.yaml
+
+For more information, visit: https://github.com/davidpacold/airia-infrastructure-validation

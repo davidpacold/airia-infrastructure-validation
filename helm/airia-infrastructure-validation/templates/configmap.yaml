@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "airia-infrastructure-validation.fullname" . }}-config
+  namespace: {{ include "airia-infrastructure-validation.namespace" . }}
+  labels:
+    {{- include "airia-infrastructure-validation.labels" . | nindent 4 }}
+data:
+  {{- if .Values.config.postgresql.enabled }}
+  # PostgreSQL configuration
+  postgres-host: {{ .Values.config.postgresql.host | quote }}
+  postgres-port: {{ .Values.config.postgresql.port | quote }}
+  postgres-database: {{ .Values.config.postgresql.database | quote }}
+  postgres-sslmode: {{ .Values.config.postgresql.sslmode | quote }}
+  {{- end }}
+  
+  {{- if .Values.config.cassandra.enabled }}
+  # Apache Cassandra configuration
+  cassandra-hosts: {{ .Values.config.cassandra.hosts | quote }}
+  cassandra-port: {{ .Values.config.cassandra.port | quote }}
+  {{- if .Values.config.cassandra.keyspace }}
+  cassandra-keyspace: {{ .Values.config.cassandra.keyspace | quote }}
+  {{- end }}
+  cassandra-datacenter: {{ .Values.config.cassandra.datacenter | quote }}
+  cassandra-use-ssl: {{ .Values.config.cassandra.useSsl | quote }}
+  {{- end }}
+  
+  {{- if .Values.config.blobStorage.enabled }}
+  # Azure Blob Storage configuration
+  blob-account-name: {{ .Values.config.blobStorage.accountName | quote }}
+  blob-container-name: {{ .Values.config.blobStorage.containerName | quote }}
+  blob-endpoint-suffix: {{ .Values.config.blobStorage.endpointSuffix | default "core.windows.net" | quote }}
+  {{- end }}
+  
+  {{- if .Values.config.azureOpenai.enabled }}
+  # Azure OpenAI configuration
+  azure-openai-endpoint: {{ .Values.config.azureOpenai.endpoint | quote }}
+  azure-openai-api-version: {{ .Values.config.azureOpenai.apiVersion | default "2024-02-01" | quote }}
+  azure-openai-chat-deployment: {{ .Values.config.azureOpenai.chatDeployment | quote }}
+  azure-openai-embedding-deployment: {{ .Values.config.azureOpenai.embeddingDeployment | quote }}
+  azure-openai-vision-deployment: {{ .Values.config.azureOpenai.visionDeployment | quote }}
+  {{- end }}
+
+  {{- if .Values.config.bedrock.enabled }}
+  # AWS Bedrock configuration
+  bedrock-region: {{ .Values.config.bedrock.region | quote }}
+  bedrock-chat-model-id: {{ .Values.config.bedrock.chatModelId | quote }}
+  bedrock-embedding-model-id: {{ .Values.config.bedrock.embeddingModelId | quote }}
+  bedrock-vision-model-id: {{ .Values.config.bedrock.visionModelId | quote }}
+  {{- end }}
+
+  {{- if .Values.config.openaiDirect.enabled }}
+  # OpenAI Direct configuration
+  openai-direct-model: {{ .Values.config.openaiDirect.model | quote }}
+  {{- end }}
+
+  {{- if .Values.config.anthropic.enabled }}
+  # Anthropic configuration
+  anthropic-model: {{ .Values.config.anthropic.model | quote }}
+  {{- end }}
+
+  {{- if .Values.config.gemini.enabled }}
+  # Google Gemini configuration
+  gemini-model: {{ .Values.config.gemini.model | quote }}
+  {{- end }}
+
+  {{- if .Values.config.mistral.enabled }}
+  # Mistral AI configuration
+  mistral-model: {{ .Values.config.mistral.model | quote }}
+  {{- end }}
+  
+  {{- if .Values.config.visionModel.enabled }}
+  # Vision Model configuration
+  vision-model-endpoint: {{ .Values.config.visionModel.endpoint | quote }}
+  vision-model-name: {{ .Values.config.visionModel.model | quote }}
+  {{- end }}
+
+  {{- if .Values.config.dedicatedEmbedding.enabled }}
+  # Dedicated Embedding configuration
+  dedicated-embedding-base-url: {{ .Values.config.dedicatedEmbedding.baseUrl | quote }}
+  dedicated-embedding-model: {{ .Values.config.dedicatedEmbedding.model | quote }}
+  dedicated-embedding-dimensions: {{ .Values.config.dedicatedEmbedding.dimensions | default 0 | quote }}
+  {{- end }}
+
+  {{- if .Values.config.documentIntelligence.enabled }}
+  # Azure Document Intelligence configuration
+  azure-doc-intel-endpoint: {{ .Values.config.documentIntelligence.endpoint | quote }}
+  azure-doc-intel-model: {{ .Values.config.documentIntelligence.model | quote }}
+  {{- if .Values.config.documentIntelligence.testUrl }}
+  azure-doc-intel-test-url: {{ .Values.config.documentIntelligence.testUrl | quote }}
+  {{- end }}
+  doc-intel-timeout: {{ .Values.config.documentIntelligence.timeout | default 60 | quote }}
+  {{- end }}
+  
+  {{- if .Values.config.ssl.enabled }}
+  # SSL certificate testing URLs
+  ssl-test-urls: {{ .Values.config.ssl.testUrls | quote }}
+  ssl-connect-timeout: {{ .Values.config.ssl.connectTimeout | quote }}
+  ssl-warning-days: {{ .Values.config.ssl.warningDays | quote }}
+  {{- end }}
+  
+  {{- if .Values.config.s3Compatible.enabled }}
+  # S3-compatible storage configuration
+  s3c-endpoint-url: {{ .Values.config.s3Compatible.endpointUrl | quote }}
+  s3c-bucket-name: {{ .Values.config.s3Compatible.bucketName | quote }}
+  s3c-secure: {{ .Values.config.s3Compatible.secure | quote }}
+  {{- end }}
+  
+  {{- if .Values.config.s3.enabled }}
+  # Amazon S3 storage configuration
+  aws-region: {{ .Values.config.s3.region | quote }}
+  s3-bucket-name: {{ .Values.config.s3.bucketName | quote }}
+  {{- if .Values.config.s3.endpointUrl }}
+  s3-endpoint-url: {{ .Values.config.s3.endpointUrl | quote }}
+  {{- end }}
+  {{- end }}
+  
+  {{- if .Values.config.dns.enabled }}
+  # DNS resolution test configuration
+  dns-test-hostnames: {{ .Values.config.dns.hostnames | quote }}
+  dns-test-timeout: {{ .Values.config.dns.timeout | default 10 | quote }}
+  {{- end }}
+
+  {{- if .Values.config.gpu.enabled }}
+  # GPU detection configuration
+  gpu-required: {{ .Values.config.gpu.required | quote }}
+  {{- end }}
+
+  # Kubernetes configuration
+  storage-class: {{ .Values.config.kubernetes.storageClass | quote }}
+  test-pvc-size: {{ .Values.config.kubernetes.testPvcSize | quote }}
