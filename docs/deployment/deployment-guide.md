@@ -1,8 +1,8 @@
-# Airia Infrastructure Test Pod - Deployment Guide
+# Airia Infrastructure Validation - Deployment Guide
 
 ## Overview
 
-The Airia Infrastructure Test Pod validates that your environment is ready for the main Airia application deployment. It tests connectivity and configuration for databases, storage, AI services, and Kubernetes components.
+The Airia Infrastructure Validation validates that your environment is ready for the main Airia application deployment. It tests connectivity and configuration for databases, storage, AI services, and Kubernetes components.
 
 **Deployment Time: 5-10 minutes**
 

@@ -1,5 +1,5 @@
 """
-Exception handling package for Airia Infrastructure Test Pod.
+Exception handling package for Airia Infrastructure Validation.
 
 This package provides standardized exception classes and error handling
 utilities for consistent error management across the application.

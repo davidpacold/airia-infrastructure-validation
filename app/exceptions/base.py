@@ -1,5 +1,5 @@
 """
-Base exception classes for the Airia Infrastructure Test Pod.
+Base exception classes for the Airia Infrastructure Validation.
 
 This module provides a standardized exception hierarchy with enhanced
 error information including details, remediation suggestions, and
@@ -48,7 +48,7 @@ class ErrorCode(Enum):
 
 class TestPodException(Exception):
     """
-    Base exception for all Test Pod errors.
+    Base exception for all Infrastructure Validation errors.
 
     Provides structured error information including error codes,
     details, and remediation suggestions to help users resolve issues.
@@ -63,7 +63,7 @@ class TestPodException(Exception):
         service_name: str = None,
     ):
         """
-        Initialize a Test Pod exception.
+        Initialize a Infrastructure Validation exception.
 
         Args:
             message: Human-readable error message

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: airia-infrastructure-validation
-description: A Helm chart for Airia Infrastructure Test Pod - validates customer infrastructure readiness
+description: A Helm chart for Airia Infrastructure Validation - validates customer infrastructure readiness
 type: application
 version: 1.0.0
 appVersion: "1.0.0"

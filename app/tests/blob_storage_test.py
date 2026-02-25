@@ -19,7 +19,7 @@ class BlobStorageTest(BaseTest):
         super().__init__()
         self.settings = get_settings()
         self.test_blob_name = f"test-blob-{uuid.uuid4().hex[:8]}.txt"
-        self.test_content = f"Test content from Airia Test Pod - {datetime.now(timezone.utc).isoformat()}"
+        self.test_content = f"Test content from Airia Infrastructure Validation - {datetime.now(timezone.utc).isoformat()}"
 
     @property
     def test_name(self) -> str:

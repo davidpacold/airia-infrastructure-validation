@@ -1,7 +1,7 @@
 """
 Error handlers for FastAPI application.
 
-This module provides centralized error handling for all Test Pod exceptions
+This module provides centralized error handling for all Infrastructure Validation exceptions
 and standard HTTP errors, ensuring consistent error response format.
 """
 
@@ -22,11 +22,11 @@ async def test_pod_exception_handler(
     request: Request, exc: TestPodException
 ) -> JSONResponse:
     """
-    Handle Test Pod custom exceptions.
+    Handle Infrastructure Validation custom exceptions.
 
     Args:
         request: The FastAPI request object
-        exc: The Test Pod exception that was raised
+        exc: The Infrastructure Validation exception that was raised
 
     Returns:
         JSONResponse with structured error information
@@ -189,7 +189,7 @@ def _get_http_status_for_error_code(error_code: ErrorCode) -> int:
     Map error codes to appropriate HTTP status codes.
 
     Args:
-        error_code: The Test Pod error code
+        error_code: The Infrastructure Validation error code
 
     Returns:
         HTTP status code integer

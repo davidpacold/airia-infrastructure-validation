@@ -1,5 +1,5 @@
 # ===============================================================================
-# AIRIA TEST POD - DEFAULT CONFIGURATION
+# AIRIA INFRASTRUCTURE VALIDATION - DEFAULT CONFIGURATION
 # ===============================================================================
 # This Helm chart deploys an infrastructure validation tool that tests various
 # services and configurations in your Kubernetes environment.
@@ -31,7 +31,7 @@ fullnameOverride: ""
 # ===============================================================================
 # KUBERNETES RESOURCES
 # ===============================================================================
-# Configure Kubernetes-specific settings for the test pod deployment.
+# Configure Kubernetes-specific settings for the infrastructure validation deployment.
 # These settings control security, networking, and resource management.
 # ===============================================================================
 
@@ -39,7 +39,7 @@ fullnameOverride: ""
 # SERVICE ACCOUNT
 # ---------------------------------------------------------------------------
 # Service accounts provide an identity for processes running in pods.
-# The test pod needs a service account to:
+# The infrastructure validation needs a service account to:
 # - Create/delete PVCs for storage testing
 # - Access Kubernetes API for cluster information
 # - Run tests that validate Kubernetes functionality
@@ -77,7 +77,7 @@ securityContext:
 # ---------------------------------------------------------------------------
 # SERVICE CONFIGURATION
 # ---------------------------------------------------------------------------
-# Kubernetes Service exposes the test pod within the cluster.
+# Kubernetes Service exposes the infrastructure validation within the cluster.
 # Access via: kubectl port-forward -n airia svc/airia-infrastructure-validation 8080:80
 service:
   type: ClusterIP

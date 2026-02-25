@@ -73,7 +73,7 @@ async def lifespan(app: FastAPI):
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-    logger.info(f"Starting Airia Test Pod v{settings.app_version}")
+    logger.info(f"Starting Airia Infrastructure Validation v{settings.app_version}")
 
     if settings.auth_password == "changeme":
         logger.warning("Default password in use - change auth.password in production")
@@ -86,7 +86,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Airia Infrastructure Test Pod",
+    title="Airia Infrastructure Validation",
     version="2.0.0",
     lifespan=lifespan,
 )
