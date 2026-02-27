@@ -809,7 +809,6 @@ async function collectDiagnostics() {
   var since = sinceEl ? sinceEl.value : '';
 
   var btn = document.getElementById('diagCollectBtn');
-  var dlBtn = document.getElementById('diagDownloadBtn');
   var statusEl = document.getElementById('diagStatus');
   var statusText = document.getElementById('diagStatusText');
   var statusIcon = document.getElementById('diagStatusIcon');
@@ -820,7 +819,6 @@ async function collectDiagnostics() {
   var spinner = document.createElement('span');
   spinner.className = 'loading-spinner';
   btn.appendChild(spinner);
-  dlBtn.style.display = 'none';
   statusEl.style.display = 'flex';
   statusIcon.className = 'diag-status-icon diag-status-collecting';
   statusText.textContent = 'Starting collection for namespace "' + ns + '"...';
@@ -849,7 +847,8 @@ function buildDiagProgress(data) {
     { key: 'discover',   label: 'Discover Pods',      icon: '\ud83d\udd0d', group: 'Pods' },
     { key: 'pod',        label: 'Collect Pod Data',   icon: '\ud83d\udce6', group: 'Pods' },
     { key: 'archive',    label: 'Create Archive',     icon: '\ud83d\uddc3', group: 'Finalize' },
-    { key: 'complete',   label: 'Complete',           icon: '\ud83c\udfc1', group: 'Finalize' }
+    { key: 'complete',   label: 'Complete',           icon: '\ud83c\udfc1', group: 'Finalize' },
+    { key: 'download',   label: 'Download Archive',   icon: '\ud83d\udcbe', group: 'Finalize' }
   ];
 
   var completed = data.completed_steps || [];
@@ -890,9 +889,15 @@ function buildDiagProgress(data) {
       lastGroup = step.group;
     }
 
+    // Download step: only show as actionable when complete
+    var isDownloadReady = (step.key === 'download' && isComplete);
+    var isDownloadPending = (step.key === 'download' && !isComplete);
+
     // Node status class
     var cls = 'diag-node';
-    if (isDone || isComplete) cls += ' diag-node-done';
+    if (isDownloadReady) cls += ' diag-node-download';
+    else if (isDownloadPending) cls += ' diag-node-pending';
+    else if (isDone || isComplete) cls += ' diag-node-done';
     else if (isActive) cls += ' diag-node-active';
     else cls += ' diag-node-pending';
 
@@ -902,6 +907,19 @@ function buildDiagProgress(data) {
       if (isDone || isComplete) lineCls += ' diag-connector-done';
       else if (isActive) lineCls += ' diag-connector-active';
       h += '<div class="' + lineCls + '"></div>';
+    }
+
+    // Download step renders as a button
+    if (isDownloadReady) {
+      h += '<div class="' + cls + '" data-action="download-diagnostics" style="cursor:pointer">';
+      h += '<div class="diag-node-indicator diag-download-indicator">';
+      h += '<svg class="diag-download-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2.75 14A1.75 1.75 0 011 12.25v-2.5a.75.75 0 011.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 00.25-.25v-2.5a.75.75 0 011.5 0v2.5A1.75 1.75 0 0113.25 14H2.75z"/><path d="M7.25 7.689V2a.75.75 0 011.5 0v5.689l1.97-1.969a.749.749 0 111.06 1.06l-3.25 3.25a.749.749 0 01-1.06 0L4.22 6.78a.749.749 0 111.06-1.06l1.97 1.969z"/></svg>';
+      h += '</div>';
+      h += '<div class="diag-node-content">';
+      h += '<span class="diag-node-label diag-download-label">Download Archive</span>';
+      h += '</div>';
+      h += '</div>';
+      continue;
     }
 
     h += '<div class="' + cls + '">';
@@ -971,7 +989,6 @@ async function pollDiagnosticsStatus() {
     var statusText = document.getElementById('diagStatusText');
     var statusIcon = document.getElementById('diagStatusIcon');
     var btn = document.getElementById('diagCollectBtn');
-    var dlBtn = document.getElementById('diagDownloadBtn');
 
     if (data.state === 'collecting') {
       statusIcon.className = 'diag-status-icon diag-status-collecting';
@@ -999,7 +1016,6 @@ async function pollDiagnosticsStatus() {
       pd.innerHTML = buildDiagProgress(data);
       btn.disabled = false;
       btn.textContent = 'Collect Diagnostics';
-      dlBtn.style.display = 'inline-flex';
       notify.success('Diagnostics Ready', data.pod_count + ' pod(s) collected from "' + (data.namespace || '') + '".');
     } else if (data.state === 'error') {
       clearInterval(_diagPollTimer);
@@ -1037,11 +1053,15 @@ window.addEventListener('load', function() {
   var sslBtn = document.getElementById('ssl-check-btn');
   if (sslBtn) sslBtn.addEventListener('click', checkSsl);
 
-  // Diagnostics buttons
+  // Diagnostics button
   var diagCollect = document.getElementById('diagCollectBtn');
   if (diagCollect) diagCollect.addEventListener('click', collectDiagnostics);
-  var diagDownload = document.getElementById('diagDownloadBtn');
-  if (diagDownload) diagDownload.addEventListener('click', downloadDiagnostics);
+
+  // Delegated click for download button inside pipeline (CSP-safe)
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('[data-action="download-diagnostics"]');
+    if (el) downloadDiagnostics();
+  });
 
   checkTestStatus();
   loadVersion();

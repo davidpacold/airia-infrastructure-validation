@@ -1086,6 +1086,44 @@ a:hover { color: var(--c-accent-hover); }
   border-radius: var(--radius-full);
 }
 
+/* Download node in pipeline */
+.diag-node-download {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: var(--sp-sm) var(--sp-md);
+  border-radius: var(--radius);
+  background: var(--c-accent);
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+.diag-node-download:hover {
+  background: var(--c-accent-hover);
+  transform: translateY(-1px);
+}
+.diag-node-download:active {
+  transform: translateY(0);
+}
+.diag-download-indicator {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  border: none;
+}
+.diag-download-icon {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+}
+.diag-download-label {
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+
 /* Small spinner (still used in buttons) */
 .loading-spinner-sm {
   display: inline-block;
