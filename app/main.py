@@ -183,7 +183,7 @@ async def readiness_check():
 @app.get("/version")
 async def get_version():
     return {
-        "version": os.getenv("APP_VERSION", get_settings().app_version),
+        "version": os.getenv("IMAGE_TAG", os.getenv("APP_VERSION", get_settings().app_version)),
         "image_tag": os.getenv("IMAGE_TAG", "unknown"),
         "build_timestamp": os.getenv("BUILD_TIMESTAMP", "unknown"),
     }
