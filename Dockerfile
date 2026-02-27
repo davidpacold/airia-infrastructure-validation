@@ -87,4 +87,6 @@ CMD ["python", "-m", "uvicorn", "app.main:app", \
      "--host", "0.0.0.0", \
      "--port", "8080", \
      "--workers", "1", \
+     "--proxy-headers", \
+     "--forwarded-allow-ips", "*", \
      "--access-log"]

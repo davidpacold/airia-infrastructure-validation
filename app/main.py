@@ -515,7 +515,10 @@ async def download_diagnostics(current_user: str = Depends(require_auth)):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=get_settings().port)
+    uvicorn.run(
+        app, host="0.0.0.0", port=get_settings().port,
+        proxy_headers=True, forwarded_allow_ips="*",
+    )
 
 # Export the app for production deployment
 application = app
