@@ -46,7 +46,7 @@ spec:
           echo ""
 
           CURRENT_VERSION="{{ .Chart.Version }}"
-          REPO_URL="{{ .Values.versionCheck.repoUrl }}"
+          REPO_URL="{{ .Values.versionCheck.repoUrl | default "" }}"
           OCI_REPO="{{ .Values.versionCheck.ociRepo }}"
 
           echo "📊 Current chart version being installed: $CURRENT_VERSION"

@@ -408,32 +408,14 @@ jobs:
             echo "health_status=passed" >> $GITHUB_OUTPUT
           fi
 
-      - name: Trigger automatic rollback on failure
+      - name: Log rollback recommendation on failure
         if: failure() && steps.health_check.outputs.health_status == 'failed'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            console.log('Health checks failed - triggering automatic rollback');
-
-            try {
-              const response = await github.rest.actions.createWorkflowDispatch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                workflow_id: 'rollback.yml',
-                ref: 'main',
-                inputs: {
-                  namespace: 'default',
-                  release_name: 'airia-infrastructure-validation',
-                  reason: `Automatic rollback due to failed post-deployment health checks for version ${{ needs.build-and-push-release.outputs.docker_version }}`,
-                  health_check_timeout: '300'
-                }
-              });
-
-              console.log('Auto-rollback workflow triggered successfully');
-            } catch (error) {
-              console.error('Failed to trigger auto-rollback:', error);
-              core.setFailed('Failed to trigger automatic rollback');
-            }
+        env:
+          DOCKER_VERSION: ${{ needs.build-and-push-release.outputs.docker_version }}
+        run: |
+          echo "::error::Health checks failed for version ${DOCKER_VERSION}"
+          echo "Manual rollback recommended. Run:"
+          echo "  helm rollback airia-infrastructure-validation -n <namespace>"
 
       - name: Create deployment validation summary
         if: always()

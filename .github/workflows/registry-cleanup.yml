@@ -85,26 +85,14 @@ jobs:
           TOTAL_IMAGES=$(cat all_images.json | jq length)
           echo "total_count=$TOTAL_IMAGES" >> $GITHUB_OUTPUT
           
-          # Simulate realistic image inventory for demonstration
           if [ $TOTAL_IMAGES -eq 0 ]; then
-            echo "📊 Simulating image inventory for demonstration..."
-            
-            # Create mock inventory
-            cat > all_images.json << EOF
-          [
-            {"id": "1", "name": "sha256:abc123", "created_at": "$(date -u -d '45 days ago' +%Y-%m-%dT%H:%M:%SZ)", "metadata": {"container": {"tags": []}}},
-            {"id": "2", "name": "sha256:def456", "created_at": "$(date -u -d '35 days ago' +%Y-%m-%dT%H:%M:%SZ)", "metadata": {"container": {"tags": []}}},
-            {"id": "3", "name": "sha256:ghi789", "created_at": "$(date -u -d '20 days ago' +%Y-%m-%dT%H:%M:%SZ)", "metadata": {"container": {"tags": ["latest", "v1.2.3"]}}},
-            {"id": "4", "name": "sha256:jkl012", "created_at": "$(date -u -d '15 days ago' +%Y-%m-%dT%H:%M:%SZ)", "metadata": {"container": {"tags": ["v1.2.4"]}}},
-            {"id": "5", "name": "sha256:mno345", "created_at": "$(date -u -d '10 days ago' +%Y-%m-%dT%H:%M:%SZ)", "metadata": {"container": {"tags": ["dev-branch-123"]}}},
-            {"id": "6", "name": "sha256:pqr678", "created_at": "$(date -u -d '5 days ago' +%Y-%m-%dT%H:%M:%SZ)", "metadata": {"container": {"tags": ["dev-branch-456"]}}},
-            {"id": "7", "name": "sha256:stu901", "created_at": "$(date -u -d '2 days ago' +%Y-%m-%dT%H:%M:%SZ)", "metadata": {"container": {"tags": ["main-abc123"]}}},
-            {"id": "8", "name": "sha256:vwx234", "created_at": "$(date -u -d '1 day ago' +%Y-%m-%dT%H:%M:%SZ)", "metadata": {"container": {"tags": ["v1.2.5", "latest"]}}}
-          ]
-          EOF
-            
-            TOTAL_IMAGES=8
-            echo "total_count=$TOTAL_IMAGES" >> $GITHUB_OUTPUT
+            echo "ℹ️ No images found in registry. Nothing to clean up."
+            echo "cleanup_needed=false" >> $GITHUB_OUTPUT
+            echo "untagged_count=0" >> $GITHUB_OUTPUT
+            echo "old_count=0" >> $GITHUB_OUTPUT
+            echo "release_count=0" >> $GITHUB_OUTPUT
+            echo "dev_count=0" >> $GITHUB_OUTPUT
+            exit 0
           fi
           
           # Analyze image categories

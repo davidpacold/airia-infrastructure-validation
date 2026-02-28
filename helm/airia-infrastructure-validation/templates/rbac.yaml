@@ -50,9 +50,6 @@ rules:
 - apiGroups: [""]
   resources: ["pods", "pods/log", "services", "events", "nodes", "configmaps", "secrets"]
   verbs: ["get", "list"]
-- apiGroups: [""]
-  resources: ["pods/exec"]
-  verbs: ["create"]
 {{- end }}
 
 ---

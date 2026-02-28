@@ -85,7 +85,7 @@ class InputSanitizer:
             raise HTTPException(status_code=400, detail="Invalid username format")
 
         # Password - don't modify but validate
-        if not password or len(password) < 1:
+        if not password:
             raise HTTPException(status_code=400, detail="Password cannot be empty")
 
         return sanitized_username, password

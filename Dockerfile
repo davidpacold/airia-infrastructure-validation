@@ -50,10 +50,14 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Install kubectl for pod diagnostics feature
-ARG TARGETARCH=amd64
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${TARGETARCH}/kubectl" \
+ARG TARGETARCH
+RUN KUBE_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt) \
+    && curl -fLO "https://dl.k8s.io/release/${KUBE_VERSION}/bin/linux/${TARGETARCH}/kubectl" \
+    && curl -fLO "https://dl.k8s.io/release/${KUBE_VERSION}/bin/linux/${TARGETARCH}/kubectl.sha256" \
+    && echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check \
     && chmod +x kubectl \
-    && mv kubectl /usr/local/bin/kubectl
+    && mv kubectl /usr/local/bin/kubectl \
+    && rm kubectl.sha256
 
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
@@ -83,10 +87,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 EXPOSE 8080
 
 # Production-optimized startup command
-CMD ["python", "-m", "uvicorn", "app.main:app", \
-     "--host", "0.0.0.0", \
-     "--port", "8080", \
-     "--workers", "1", \
-     "--proxy-headers", \
-     "--forwarded-allow-ips", "*", \
-     "--access-log"]
+ENV UVICORN_WORKERS=1
+CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers ${UVICORN_WORKERS} --proxy-headers --forwarded-allow-ips '*' --access-log"]

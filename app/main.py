@@ -1,5 +1,6 @@
 import logging
 import os
+import secrets
 import threading
 import time
 from contextlib import asynccontextmanager
@@ -35,13 +36,16 @@ def _check_rate_limit(client_ip: str) -> bool:
     """Returns True if request is allowed, False if rate limited."""
     now = time.time()
     with _rate_limit_lock:
-        # Prune stale IP keys when dict exceeds 100 entries to prevent memory leak
+        # Always prune old timestamps from all IPs when dict exceeds 100 entries
         if len(_rate_limit_attempts) > 100:
-            stale_ips = [
-                ip for ip, timestamps in _rate_limit_attempts.items()
-                if all(now - t >= _RATE_LIMIT_WINDOW for t in timestamps)
-            ]
-            for ip in stale_ips:
+            to_delete = []
+            for ip, timestamps in _rate_limit_attempts.items():
+                fresh = [t for t in timestamps if now - t < _RATE_LIMIT_WINDOW]
+                if fresh:
+                    _rate_limit_attempts[ip] = fresh
+                else:
+                    to_delete.append(ip)
+            for ip in to_delete:
                 del _rate_limit_attempts[ip]
 
         attempts = _rate_limit_attempts.get(client_ip, [])
@@ -87,7 +91,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Airia Infrastructure Validation",
-    version="2.0.0",
+    version=get_settings().app_version,
     lifespan=lifespan,
 )
 
@@ -116,10 +120,11 @@ async def add_security_and_cache_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "style-src 'self' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
         "connect-src 'self'; "
@@ -205,13 +210,24 @@ async def login_page(
     if current_user:
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     settings = get_settings()
-    return templates.TemplateResponse(
-        "login.html", {"request": request, "title": settings.app_name, "version": settings.app_version}
+    csrf_token = secrets.token_hex(32)
+    response = templates.TemplateResponse(
+        "login.html", {"request": request, "title": settings.app_name, "version": settings.app_version, "csrf_token": csrf_token}
     )
+    response.set_cookie(key="csrf_token", value=csrf_token, httponly=True, samesite="strict", max_age=600)
+    return response
 
 
 @app.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+async def login(request: Request, username: str = Form(...), password: str = Form(...), csrf_token: str = Form("")):
+    # Verify CSRF token
+    cookie_csrf = request.cookies.get("csrf_token", "")
+    if not cookie_csrf or not secrets.compare_digest(cookie_csrf, csrf_token):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid or missing CSRF token. Please refresh the page and try again.",
+        )
+
     if not _check_rate_limit(_get_client_ip(request)):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -256,7 +272,6 @@ async def login(request: Request, username: str = Form(...), password: str = For
         secure=settings.secure_cookies,
         samesite="lax",
         max_age=settings.access_token_expire_minutes * 60,
-        expires=settings.access_token_expire_minutes * 60,
     )
     return response
 

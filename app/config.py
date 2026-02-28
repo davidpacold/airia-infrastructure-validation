@@ -1,4 +1,5 @@
 import logging
+import os
 import secrets
 from functools import lru_cache
 
@@ -11,7 +12,7 @@ _DEFAULT_SECRET_KEY = "your-secret-key-here-change-in-production"
 
 class Settings(BaseSettings):
     app_name: str = "Airia Infrastructure Validation"
-    app_version: str = "2.0.0"
+    app_version: str = os.getenv("APP_VERSION", "2.0.0")
 
     auth_username: str = "admin"
     auth_password: str = "changeme"

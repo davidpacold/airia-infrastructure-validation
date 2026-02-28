@@ -663,7 +663,7 @@ async function checkTestStatus() {
       el.className = 'test-status ' + (t.status === 'passed' ? 'passed' : t.status === 'failed' ? 'failed' : 'pending');
     }
   } catch (err) {
-    console.warn('Status check failed:', err.message);
+    // Status check failed silently - will retry on next interval
   }
 }
 
@@ -675,7 +675,6 @@ async function loadVersion() {
     const data = await resp.json();
     document.getElementById('version-display').textContent = 'v' + data.version;
   } catch (err) {
-    console.warn('Version load failed:', err.message);
     document.getElementById('version-display').textContent = 'v' + (window.APP_VERSION || '');
   }
 }
